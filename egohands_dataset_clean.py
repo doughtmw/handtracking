@@ -20,6 +20,10 @@ def save_csv(csv_path, csv_content):
         for i in range(len(csv_content)):
             wr.writerow(csv_content[i])
 
+def save_txt(txt_path, cls, x_c, y_c, w, h):
+    with open(txt_path, 'w') as txtfile:
+        outtxt = cls, x_c, y_c, w, h
+        txtfile.write(str(outtxt) + '\n')
 
 def get_bbox_visualize(base_path, dir):
     image_path_array = []
@@ -106,6 +110,53 @@ def get_bbox_visualize(base_path, dir):
             print("===== saving csv file for ", tail)
         cv2.waitKey(2)  # close window when a key press is detected
 
+# Create text files in normalized yolo format rather than csv file
+# <x> <y> <width> <height> - float values relative to width and height of image, it can be equal from 0.0 to 1.0
+# <x> = <absolute_x> / <image_width> or <height> = <absolute_height> / <image_height>
+# images are 1280 x 720
+# x, y are center coords of rectangle
+def format_txt_bb(base_path, out_path):
+    for file in os.listdir(base_path):
+        with open(base_path + file, "r") as filestream:
+            print("Opening file: " + base_path + file)
+
+            out_file = open(out_path + file, "w")
+
+            for line in filestream:
+                currentline = line.split(",")
+
+                if (currentline[0] != '\n'):
+                    # filename, img_x, img_y, img_class, x1, y1, x2, y2
+                    # CARDS_COURTYARD_B_T_frame_0176.jpg, 1280, 720, hand, 610, 432, 783, 541
+                    img_x = float(currentline[1])
+                    img_y = float(currentline[2])
+                    
+                    img_class = 0
+                    if (currentline[3] == 'hand'):
+                        img_class = 1
+                    else:
+                        img_class = 0
+                    x1 = float(currentline[4])
+                    y1 = float(currentline[5])
+                    x2 = float(currentline[6])
+                    y2 = float(currentline[7])
+                    
+                    # Compute scaled x_c, y_c, w, h settings
+                    x_c = ((x1 + x2) / 2.0) / img_x
+                    y_c = ((y1 + y2) / 2.0) / img_y
+                    w = (x2 - x1) / img_x
+                    h = (y2 - y1) / img_y
+
+                    out_file.write(
+                        str(img_class) + ", " + 
+                        str(x_c) + ", " + 
+                        str(y_c) + ", " + 
+                        str(w) + ", " + 
+                        str(h) + 
+                        "\n")
+
+            out_file.close
+                
 
 def create_directory(dir_path):
     if not os.path.exists(dir_path):
@@ -114,27 +165,27 @@ def create_directory(dir_path):
 # combine all individual csv files for each image into a single csv file per folder.
 
 
-def generate_label_files(image_dir):
-    header = ['filename', 'width', 'height',
-              'class', 'xmin', 'ymin', 'xmax', 'ymax']
-    for root, dirs, filenames in os.walk(image_dir):
-        for dir in dirs:
-            csvholder = []
-            csvholder.append(header)
-            loop_index = 0
-            for f in os.listdir(image_dir + dir):
-                if(f.split(".")[1] == "csv"):
-                    loop_index += 1
-                    #print(loop_index, f)
-                    csv_file = open(image_dir + dir + "/" + f, 'r')
-                    reader = csv.reader(csv_file)
-                    for row in reader:
-                        csvholder.append(row)
-                    csv_file.close()
-                    os.remove(image_dir + dir + "/" + f)
-            save_csv(image_dir + dir + "/" + dir + "_labels.csv", csvholder)
-            print("Saved label csv for ", dir, image_dir +
-                  dir + "/" + dir + "_labels.csv")
+# def generate_label_files(image_dir):
+#     header = ['filename', 'width', 'height',
+#               'class', 'xmin', 'ymin', 'xmax', 'ymax']
+#     for root, dirs, filenames in os.walk(image_dir):
+#         for dir in dirs:
+#             csvholder = []
+#             csvholder.append(header)
+#             loop_index = 0
+#             for f in os.listdir(image_dir + dir):
+#                 if(f.split(".")[1] == "csv"):
+#                     loop_index += 1
+#                     #print(loop_index, f)
+#                     csv_file = open(image_dir + dir + "/" + f, 'r')
+#                     reader = csv.reader(csv_file)
+#                     for row in reader:
+#                         csvholder.append(row)
+#                     csv_file.close()
+#                     os.remove(image_dir + dir + "/" + f)
+#             save_csv(image_dir + dir + "/" + dir + "_labels.csv", csvholder)
+#             print("Saved label csv for ", dir, image_dir +
+#                   dir + "/" + dir + "_labels.csv")
 
 
 # Split data, copy to train/test folders
@@ -142,6 +193,10 @@ def split_data_test_eval_train(image_dir):
     create_directory("images")
     create_directory("images/train")
     create_directory("images/test")
+
+    create_directory("labels")
+    create_directory("labels/train")
+    create_directory("labels/test")
 
     data_size = 4000
     loop_index = 0
@@ -159,19 +214,19 @@ def split_data_test_eval_train(image_dir):
                         os.rename(image_dir + dir +
                                   "/" + f, "images/test/" + f)
                         os.rename(image_dir + dir +
-                                  "/" + f.split(".")[0] + ".csv", "images/test/" + f.split(".")[0] + ".csv")
+                                  "/" + f.split(".")[0] + ".csv", "labels/test/" + f.split(".")[0] + ".txt")
                     else:
                         os.rename(image_dir + dir +
                                   "/" + f, "images/train/" + f)
                         os.rename(image_dir + dir +
-                                  "/" + f.split(".")[0] + ".csv", "images/train/" + f.split(".")[0] + ".csv")
+                                  "/" + f.split(".")[0] + ".csv", "labels/train/" + f.split(".")[0] + ".txt")
                     print(loop_index, image_dir + f)
             print(">   done scanning director ", dir)
             os.remove(image_dir + dir + "/polygons.mat")
             os.rmdir(image_dir + dir)
 
         print("Train/test content generation complete!")
-        generate_label_files("images/")
+        # generate_label_files("images/")
 
 
 def generate_csv_files(image_dir):
@@ -180,8 +235,7 @@ def generate_csv_files(image_dir):
             get_bbox_visualize(image_dir, dir)
 
     print("CSV generation complete!\nGenerating train/test/eval folders")
-    split_data_test_eval_train("egohands/_LABELLED_SAMPLES/")
-
+    split_data_test_eval_train("egohands/_LABELLED_SAMPLES/")          
 
 # rename image files so we can have them all in a train/test/eval folder.
 def rename_files(image_dir):
@@ -219,7 +273,7 @@ def download_egohands_dataset(dataset_url, dataset_path):
         opener = urllib.request.URLopener()
         opener.retrieve(dataset_url, dataset_path)
         print("> download complete")
-        extract_folder(dataset_path);
+        extract_folder(dataset_path)
 
     else:
         extract_folder(dataset_path)
@@ -229,4 +283,7 @@ EGOHANDS_DATASET_URL = "http://vision.soic.indiana.edu/egohands_files/egohands_d
 EGO_HANDS_FILE = "egohands_data.zip"
 
 
-download_egohands_dataset(EGOHANDS_DATASET_URL, EGO_HANDS_FILE)
+# download_egohands_dataset(EGOHANDS_DATASET_URL, EGO_HANDS_FILE)
+
+format_txt_bb("D:\\Users\\dough\\git-backup\\handtracking\\labels\\test\\", "D:\\Users\\dough\\git-backup\\handtracking\\labels_format\\test\\")
+format_txt_bb("D:\\Users\\dough\\git-backup\\handtracking\\labels\\train\\", "D:\\Users\\dough\\git-backup\\handtracking\\labels_format\\train\\")

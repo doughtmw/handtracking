@@ -95,3 +95,7 @@ egohands/
 egohands_data.zip
 images/test/
 images/train/
+labels/test/
+labels/train/
+labels_format/test/
+labels_format/train
