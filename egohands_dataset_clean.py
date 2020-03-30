@@ -148,10 +148,10 @@ def format_txt_bb(base_path, out_path):
                     h = (y2 - y1) / img_y
 
                     out_file.write(
-                        str(img_class) + ", " + 
-                        str(x_c) + ", " + 
-                        str(y_c) + ", " + 
-                        str(w) + ", " + 
+                        str(img_class) + " " + 
+                        str(x_c) + " " + 
+                        str(y_c) + " " + 
+                        str(w) + " " + 
                         str(h) + 
                         "\n")
 
@@ -285,5 +285,5 @@ EGO_HANDS_FILE = "egohands_data.zip"
 
 # download_egohands_dataset(EGOHANDS_DATASET_URL, EGO_HANDS_FILE)
 
-format_txt_bb("D:\\Users\\dough\\git-backup\\handtracking\\labels\\test\\", "D:\\Users\\dough\\git-backup\\handtracking\\labels_format\\test\\")
-format_txt_bb("D:\\Users\\dough\\git-backup\\handtracking\\labels\\train\\", "D:\\Users\\dough\\git-backup\\handtracking\\labels_format\\train\\")
+format_txt_bb('F:\\Data\\handtracking\\labels\\test\\', 'F:\\Data\\handtracking\\labels_format\\test\\')
+format_txt_bb('F:\\Data\\handtracking\\labels\\train\\', 'F:\\Data\\handtracking\\labels_format\\train\\')
