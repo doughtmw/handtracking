@@ -131,11 +131,11 @@ def format_txt_bb(base_path, out_path):
                     img_x = float(currentline[1])
                     img_y = float(currentline[2])
                     
+                    # Hand class 
                     img_class = 0
                     if (currentline[3] == 'hand'):
-                        img_class = 1
-                    else:
                         img_class = 0
+
                     x1 = float(currentline[4])
                     y1 = float(currentline[5])
                     x2 = float(currentline[6])
@@ -146,6 +146,21 @@ def format_txt_bb(base_path, out_path):
                     y_c = ((y1 + y2) / 2.0) / img_y
                     w = (x2 - x1) / img_x
                     h = (y2 - y1) / img_y
+
+                    # Check for nan values
+                    import math
+                    if (math.isnan(x_c)):
+                        x_c = 0
+                        print('Found NAN value')
+                    if (math.isnan(y_c)):
+                        y_c = 0
+                        print('Found NAN value')
+                    if (math.isnan(w)):
+                        w = 0
+                        print('Found NAN value')
+                    if (math.isnan(h)):
+                        h = 0
+                        print('Found NAN value')
 
                     out_file.write(
                         str(img_class) + " " + 
